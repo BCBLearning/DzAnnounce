@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Description Generator</title>
+    <style>
+        body { font-family: sans-serif; padding: 15px; background-color: #f8f8f8; color: #333; }
+        h3 { color: #2c3e50; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input[type="text"], textarea {
+            width: calc(100% - 22px); /* Ajustement pour padding */
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box; /* Important pour le padding */
+        }
+        textarea { min-height: 100px; resize: vertical; }
+        button {
+            background-color: #4CAF50; /* Vert */
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-top: 5px;
+        }
+        button:hover { background-color: #45a049; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .flex-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .flex-item { flex: 1; min-width: 150px; }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #e7f3e7;
+            color: #28a745;
+            border: 1px solid #d0e7d0;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h3>Générateur de Description IA</h3>
+    <p>Utilisez l'IA pour générer ou améliorer la description de votre annonce.</p>
+
+    <label for="keywords">Mots-clés (séparés par des virgules):</label>
+    <input type="text" id="keywords" placeholder="ex: spacieux, 3 chambres, vue mer">
+
+    <label for="initialDescription">Description Existante (l'IA la complétera):</label>
+    <textarea id="initialDescription" placeholder="Commencez à taper ou laissez vide pour une nouvelle description..."></textarea>
+
+    <button id="generateBtn">Générer Description IA</button>
+    <button id="translateFrBtn" data-lang="fr">Traduire en Français</button>
+    <button id="translateArBtn" data-lang="ar">ترجمة إلى العربية</button>
+    <button id="translateKabBtn" data-lang="kab">Ttraduction en Tamazight</button>
+    <button id="categorizeBtn">Suggérer Catégorie</button>
+
+    <p id="message" class="message" style="display:none;"></p>
+
+    <script src="./plugin.js"></script>
+</body>
+</html>
+
