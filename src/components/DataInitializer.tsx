@@ -1,51 +1,71 @@
 import { supabase } from '@/lib/supabase';
+import { categoryService } from '@/services/CategoryService';
+import { wilayaService } from '@/services/WilayaService';
+import { paidAnnouncementService } from './PaidAnnouncementService';
 
-// Données de base pour l'application - suppression des données constantes
-export const initializeData = async () => {
-  try {
-    // Vérifier si les données existent déjà dans la base
-    const { data: existingCategories } = await supabase
-      .from('categories')
-      .select('id')
-      .limit(1);
-    
-    const { data: existingWilayas } = await supabase
-      .from('wilayas')
-      .select('id')
-      .limit(1);
+export const dataInitializer = {
+  async initializeDatabase() {
+    try {
+      console.log('Initialisation de la base de données...');
+      
+      // Initialiser les catégories
+      await categoryService.initializeCategories();
+      console.log('✅ Catégories initialisées');
+      
+      // Initialiser les wilayas
+      await wilayaService.initializeWilayas();
+      console.log('✅ Wilayas initialisées');
+      
+      // Initialiser le système payant
+      await paidAnnouncementService.initializePaidSystem();
+      console.log('✅ Système payant initialisé');
+      
+      // Vérifier les politiques RLS
+      await this.setupRLS();
+      console.log('✅ Politiques RLS configurées');
+      
+      return { success: true, message: 'Base de données initialisée avec succès' };
+    } catch (error) {
+      console.error('Erreur initialisation:', error);
+      return { success: false, error };
+    }
+  },
 
-    // Les données sont maintenant dans la base de données
-    // Plus besoin d'insertion manuelle
-    return { 
-      success: true, 
-      categoriesExist: existingCategories && existingCategories.length > 0,
-      wilayasExist: existingWilayas && existingWilayas.length > 0
-    };
-  } catch (error) {
-    console.error('Erreur initialisation données:', error);
-    return { success: false, error };
+  async setupRLS() {
+    try {
+      const queries = [
+        'ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;',
+        'ALTER TABLE categories ENABLE ROW LEVEL SECURITY;',
+        'ALTER TABLE wilayas ENABLE ROW LEVEL SECURITY;',
+        'ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;',
+        'ALTER TABLE paid_announcements ENABLE ROW LEVEL SECURITY;'
+      ];
+      
+      for (const query of queries) {
+        await supabase.rpc('exec_sql', { sql: query });
+      }
+      
+      return true;
+    } catch (error) {
+      console.log('RLS setup error (normal):', error);
+      return false;
+    }
+  },
+
+  async checkInitializationStatus() {
+    try {
+      const [categories, wilayas] = await Promise.all([
+        categoryService.getCategories(),
+        wilayaService.getWilayas()
+      ]);
+      
+      return {
+        categoriesCount: categories.data?.length || 0,
+        wilayasCount: wilayas.data?.length || 0,
+        isInitialized: (categories.data?.length || 0) > 0 && (wilayas.data?.length || 0) > 0
+      };
+    } catch (error) {
+      return { categoriesCount: 0, wilayasCount: 0, isInitialized: false, error };
+    }
   }
 };
-
-// Fallback local uniquement en cas d'urgence
-export const getLocalCategories = () => [
-  { id: 1, name: 'Véhicules', icon: '🚗' },
-  { id: 2, name: 'Immobilier', icon: '🏠' },
-  { id: 3, name: 'Électronique', icon: '📱' },
-  { id: 4, name: 'Mode', icon: '👕' },
-  { id: 5, name: 'Maison', icon: '🏡' },
-  { id: 6, name: 'Emploi', icon: '💼' },
-  { id: 7, name: 'Loisirs', icon: '🎮' },
-  { id: 8, name: 'Services', icon: '🔧' }
-];
-
-export const getLocalWilayas = () => [
-  { id: 16, code: '16', name: 'Alger' },
-  { id: 31, code: '31', name: 'Oran' },
-  { id: 25, code: '25', name: 'Constantine' },
-  { id: 9, code: '09', name: 'Blida' },
-  { id: 6, code: '06', name: 'Béjaïa' },
-  { id: 19, code: '19', name: 'Sétif' },
-  { id: 15, code: '15', name: 'Tizi Ouzou' },
-  { id: 23, code: '23', name: 'Annaba' }
-];

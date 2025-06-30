@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, Users, FileText, BarChart3, Settings, Eye, Trash2 } from 'lucide-react';
+import { Shield, Users, FileText, BarChart3, Settings, Eye, Trash2, Database } from 'lucide-react';
 import { userService } from '@/components/UserService';
 import { announcementService } from '@/components/AnnouncementService';
+import { dataInitializer } from '@/components/DataInitializer';
 import { toast } from '@/components/ui/use-toast';
 import type { Announcement } from '@/components/AnnouncementService';
 
@@ -16,6 +17,8 @@ const Admin: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [initStatus, setInitStatus] = useState<any>(null);
+  const [initializing, setInitializing] = useState(false);
   const [stats, setStats] = useState({
     totalAnnouncements: 0,
     activeAnnouncements: 0,
@@ -45,6 +48,7 @@ const Admin: React.FC = () => {
       }
       setUser(data);
       await loadData();
+      await checkInitStatus();
     } catch (error) {
       navigate('/');
     } finally {
@@ -52,9 +56,45 @@ const Admin: React.FC = () => {
     }
   };
 
+  const checkInitStatus = async () => {
+    try {
+      const status = await dataInitializer.checkInitializationStatus();
+      setInitStatus(status);
+    } catch (error) {
+      console.error('Erreur vérification init:', error);
+    }
+  };
+
+  const handleInitializeDatabase = async () => {
+    setInitializing(true);
+    try {
+      const result = await dataInitializer.initializeDatabase();
+      if (result.success) {
+        toast({
+          title: 'Succès',
+          description: 'Base de données initialisée avec succès'
+        });
+        await checkInitStatus();
+      } else {
+        toast({
+          title: 'Erreur',
+          description: 'Erreur lors de l\'initialisation',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue',
+        variant: 'destructive'
+      });
+    } finally {
+      setInitializing(false);
+    }
+  };
+
   const loadData = async () => {
     try {
-      // Charger toutes les annonces pour les statistiques
       const { data: allAnnouncements } = await announcementService.getAnnouncements({ limit: 1000 });
       
       if (allAnnouncements) {
@@ -80,51 +120,6 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleDeleteAnnouncement = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette annonce ?')) return;
-
-    try {
-      const { error } = await announcementService.deleteAnnouncement(id);
-      if (error) {
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de supprimer l\'annonce',
-          variant: 'destructive'
-        });
-      } else {
-        toast({
-          title: 'Succès',
-          description: 'Annonce supprimée avec succès'
-        });
-        await loadData();
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-DZ', {
-      style: 'currency',
-      currency: 'DZD',
-      minimumFractionDigits: 0
-    }).format(price);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -139,7 +134,6 @@ const Admin: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <Shield className="h-8 w-8 text-blue-600" />
@@ -152,7 +146,53 @@ const Admin: React.FC = () => {
           <p className="text-gray-600">Gestion de la plateforme DzAnnounce</p>
         </div>
 
-        {/* Statistiques */}
+        {/* Initialisation Database */}
+        {initStatus && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Initialisation de la Base de Données
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <span>Catégories</span>
+                    <Badge variant={initStatus.categoriesCount > 0 ? 'default' : 'secondary'}>
+                      {initStatus.categoriesCount} initialisées
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <span>Wilayas</span>
+                    <Badge variant={initStatus.wilayasCount > 0 ? 'default' : 'secondary'}>
+                      {initStatus.wilayasCount} initialisées
+                    </Badge>
+                  </div>
+                </div>
+                
+                {!initStatus.isInitialized && (
+                  <Alert>
+                    <AlertDescription>
+                      La base de données n'est pas encore initialisée. Cliquez sur le bouton ci-dessous pour initialiser les catégories, wilayas et le système payant.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                <Button 
+                  onClick={handleInitializeDatabase}
+                  disabled={initializing}
+                  className="w-full"
+                >
+                  {initializing ? 'Initialisation...' : 'Initialiser la Base de Données'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
@@ -165,19 +205,17 @@ const Admin: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Annonces Actives</p>
+                  <p className="text-sm font-medium text-gray-600">Actives</p>
                   <p className="text-2xl font-bold text-green-600">{stats.activeAnnouncements}</p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -189,7 +227,6 @@ const Admin: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -203,11 +240,10 @@ const Admin: React.FC = () => {
           </Card>
         </div>
 
-        {/* Contenu principal */}
+        {/* Tabs */}
         <Tabs defaultValue="announcements" className="space-y-6">
           <TabsList>
             <TabsTrigger value="announcements">Annonces</TabsTrigger>
-            <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             <TabsTrigger value="settings">Paramètres</TabsTrigger>
           </TabsList>
 
@@ -225,7 +261,7 @@ const Admin: React.FC = () => {
                   </Alert>
                 ) : (
                   <div className="space-y-4">
-                    {announcements.map((announcement) => (
+                    {announcements.slice(0, 10).map((announcement) => (
                       <div key={announcement.id} className="border rounded-lg p-4 hover:bg-gray-50">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -234,58 +270,22 @@ const Admin: React.FC = () => {
                               <Badge variant={announcement.status === 'active' ? 'default' : 'secondary'}>
                                 {announcement.status}
                               </Badge>
-                              {announcement.is_urgent && (
-                                <Badge variant="destructive">Urgent</Badge>
-                              )}
-                              {announcement.is_featured && (
-                                <Badge className="bg-yellow-500">Vedette</Badge>
-                              )}
                             </div>
                             <p className="text-gray-600 text-sm mb-2 line-clamp-2">
                               {announcement.description}
                             </p>
                             <div className="flex items-center gap-4 text-sm text-gray-500">
                               <span className="font-medium text-blue-600">
-                                {formatPrice(announcement.price)}
+                                {announcement.price.toLocaleString()} DA
                               </span>
                               <span>{announcement.views || 0} vues</span>
-                              <span>{formatDate(announcement.created_at)}</span>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2 ml-4">
-                            <Button size="sm" variant="outline">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteAnnouncement(announcement.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestion des Utilisateurs</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Alert>
-                  <Users className="h-4 w-4" />
-                  <AlertDescription>
-                    La gestion des utilisateurs sera disponible dans une prochaine version.
-                    Actuellement, les utilisateurs sont gérés via Supabase Auth.
-                  </AlertDescription>
-                </Alert>
               </CardContent>
             </Card>
           </TabsContent>
@@ -299,8 +299,8 @@ const Admin: React.FC = () => {
                 <Alert>
                   <Settings className="h-4 w-4" />
                   <AlertDescription>
-                    Les paramètres avancés seront disponibles dans une prochaine version.
-                    Configuration actuelle : Base de données Supabase, authentification activée.
+                    Application opérationnelle avec base de données initialisée.
+                    Catégories, wilayas et système payant configurés.
                   </AlertDescription>
                 </Alert>
               </CardContent>

@@ -1,96 +1,97 @@
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Filter } from 'lucide-react';
+import { Search, MapPin, Tag } from 'lucide-react';
+import { categoryService } from '@/services/CategoryService';
 import { wilayaService } from '@/services/WilayaService';
 
 interface SearchFiltersProps {
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  selectedCategory: string;
-  setSelectedCategory: (category: string) => void;
-  selectedLocation: string;
-  setSelectedLocation: (location: string) => void;
-  priceRange: [number, number];
-  setPriceRange: (range: [number, number]) => void;
+  onSearch: (filters: any) => void;
 }
 
-const categories = [
-  'Tous',
-  'Véhicules',
-  'Immobilier',
-  'Électronique',
-  'Mode',
-  'Maison & Jardin',
-  'Emploi',
-  'Services'
-];
+export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedWilaya, setSelectedWilaya] = useState('');
+  const [categories, setCategories] = useState<any[]>([]);
+  const [wilayas, setWilayas] = useState<any[]>([]);
 
-const locations = [
-  'Toutes les wilayas',
-  'Alger',
-  'Oran',
-  'Constantine',
-  'Annaba',
-  'Blida',
-  'Batna',
-  'Djelfa',
-  'Sétif',
-  'Sidi Bel Abbès',
-  'Biskra'
-];
+  useEffect(() => {
+    loadData();
+  }, []);
 
-export const SearchFilters = ({
-  searchTerm,
-  setSearchTerm,
-  selectedCategory,
-  setSelectedCategory,
-  selectedLocation,
-  setSelectedLocation
-}: SearchFiltersProps) => {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-        <Input
-          placeholder="Rechercher une annonce..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 h-12 text-lg"
-        />
-      </div>
+  const loadData = async () => {
+    try {
+      const [categoriesResult, wilayasResult] = await Promise.all([
+        categoryService.getCategories(),
+        wilayaService.getWilayas()
+      ]);
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      setCategories(categoriesResult.data || []);
+      setWilayas(wilayasResult.data || []);
+    } catch (error) {
+      console.error('Error loading filter data:', error);
+    }
+  };
+
+  const handleSearch = () => {
+    onSearch({
+      search: searchTerm,
+      category: selectedCategory,
+      wilaya: selectedWilaya
+    });
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm border">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Rechercher..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="h-12">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Catégorie" />
+          <SelectTrigger>
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-gray-400" />
+              <SelectValue placeholder="Catégorie" />
+            </div>
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="">Toutes les catégories</SelectItem>
             {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
+              <SelectItem key={category.id} value={category.id.toString()}>
+                {category.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-
-        <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-          <SelectTrigger className="h-12">
-            <MapPin className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Localisation" />
+        
+        <Select value={selectedWilaya} onValueChange={setSelectedWilaya}>
+          <SelectTrigger>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gray-400" />
+              <SelectValue placeholder="Wilaya" />
+            </div>
           </SelectTrigger>
           <SelectContent>
-            {locations.map((location) => (
-              <SelectItem key={location} value={location}>
-                {location}
+            <SelectItem value="">Toutes les wilayas</SelectItem>
+            {wilayas.map((wilaya) => (
+              <SelectItem key={wilaya.id} value={wilaya.id.toString()}>
+                {wilaya.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-
-        <Button className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-          <Search className="w-4 h-4 mr-2" />
+        
+        <Button onClick={handleSearch} className="w-full">
+          <Search className="h-4 w-4 mr-2" />
           Rechercher
         </Button>
       </div>
@@ -98,4 +99,4 @@ export const SearchFilters = ({
   );
 };
 
-export { wilayaService };
+export { categoryService, wilayaService };
