@@ -59,21 +59,12 @@ export const userService = {
 
   async checkAdminExists() {
     try {
-      // Vérifier dans la table profiles
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1);
+      // Vérifier dans les métadonnées des utilisateurs
+      const { data: { users }, error } = await supabase.auth.admin.listUsers();
+      if (error) return false;
       
-      if (error) {
-        console.log('Erreur vérification admin:', error);
-        return false;
-      }
-      
-      return data && data.length > 0;
-    } catch (error) {
-      console.log('Erreur checkAdminExists:', error);
+      return users.some(user => user.user_metadata?.role === 'admin');
+    } catch {
       return false;
     }
   },
