@@ -12,7 +12,7 @@ import { Plus, AlertCircle } from 'lucide-react';
 import { announcementService } from '@/components/AnnouncementService';
 import { categoryService } from '@/services/CategoryService';
 import { wilayaService } from '@/services/WilayaService';
-import { userService } from '@/components/UserService';
+import { userService } from '@/services/UserService';
 import { toast } from '@/components/ui/use-toast';
 
 const CreateAnnouncement: React.FC = () => {

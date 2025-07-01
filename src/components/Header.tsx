@@ -6,7 +6,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Badge } from '@/components/ui/badge';
 import { Plus, User, Settings, LogOut, Shield, Menu, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { userService, User as UserType } from '@/components/UserService';
+import { userService } from "@/services/UserService";
+
+
 import { toast } from '@/components/ui/use-toast';
 
 const Header: React.FC = () => {

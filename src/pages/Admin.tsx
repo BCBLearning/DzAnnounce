@@ -24,9 +24,12 @@ import {
 import { Input } from '@/components/ui/input';
 
 import { toast } from '@/components/ui/use-toast';
-import { userService } from '@/components/UserService';
+
 import { announcementService } from '@/components/AnnouncementService';
 import { dataInitializer } from '@/components/DataInitializer';
+
+import { userAdminService } from '@/services/UserAdminService';
+import type { User } from '@/services/UserService';
 
 // ✅ Chemins corrigés vers /services
 import { categoryService } from '@/services/CategoryService';
@@ -58,6 +61,12 @@ const Admin: React.FC = () => {
     pendingAnnouncements: 0,
     totalViews: 0,
   });
+  const [userList, setUserList] = useState<User[]>([]);
+
+const loadUserList = async () => {
+  const { data } = await userAdminService.getUsers();
+  setUserList(data || []);
+};
 
   useEffect(() => {
     checkAdminAccess();
@@ -237,7 +246,10 @@ const Admin: React.FC = () => {
         </div>
 
         <Tabs defaultValue="stats">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="users">
+  <Shield className="h-4 w-4 mr-2" /> Utilisateurs
+</TabsTrigger>
             <TabsTrigger value="stats">
               <BarChart3 className="h-4 w-4 mr-2" /> Statistiques
             </TabsTrigger>
@@ -458,8 +470,63 @@ const Admin: React.FC = () => {
                   </ul>
                 )}
               </CardContent>
+              
+              
             </Card>
           </TabsContent>
+          
+          <TabsContent value="users">
+  <Card>
+    <CardHeader>
+      <CardTitle>Utilisateurs</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-2">
+      {userList.length === 0 ? (
+        <Alert><AlertDescription>Aucun utilisateur</AlertDescription></Alert>
+      ) : (
+        <ul className="space-y-2">
+          {userList.map((u) => (
+            <li key={u.id} className="p-3 border rounded flex justify-between items-center">
+              <div>
+                <strong>{u.full_name || 'Utilisateur'}</strong><br />
+                {u.email} — <Badge>{u.role}</Badge>
+              </div>
+              <div className="flex gap-2">
+                {u.role !== 'admin' && (
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      if (confirm('Promouvoir cet utilisateur en admin ?')) {
+                        await userAdminService.updateRole(u.id, 'admin');
+                        toast({ title: 'Rôle mis à jour' });
+                        await loadUserList();
+                      }
+                    }}
+                  >
+                    Promouvoir admin
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  onClick={async () => {
+                    if (confirm('Supprimer cet utilisateur ?')) {
+                      await userAdminService.banUser(u.id);
+                      toast({ title: 'Utilisateur banni' });
+                      await loadUserList();
+                    }
+                  }}
+                >
+                  Bannir
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </CardContent>
+  </Card>
+</TabsContent>
+
         </Tabs>
       </div>
     </div>

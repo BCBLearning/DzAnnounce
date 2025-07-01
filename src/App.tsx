@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
-import { userService } from '@/components/UserService';
+import { userService } from '@/services/UserService';
 import AdminSetup from '@/components/AdminSetup';
 import Header from '@/components/Header';
 import Index from '@/pages/Index';

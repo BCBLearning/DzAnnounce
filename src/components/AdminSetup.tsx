@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, User, Mail, Lock } from 'lucide-react';
-import { userService } from '@/components/UserService';
+import { userService } from "@/services/UserService";
 import { toast } from '@/components/ui/use-toast';
 import { categoryService } from '@/services/CategoryService';
 import { wilayaService } from '@/services/WilayaService';
