@@ -68,7 +68,7 @@ const Admin: React.FC = () => {
         navigate('/');
         toast({
           title: 'Accès refusé',
-          description: 'Vous n\\'avez pas les privilèges administrateur',
+          description: `Erreur lors de l'initialisation`,
           variant: 'destructive',
         });
         return;
