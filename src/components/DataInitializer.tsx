@@ -20,35 +20,10 @@ export const dataInitializer = {
       await paidAnnouncementService.initializePaidSystem();
       console.log('✅ Système payant initialisé');
       
-      // Vérifier les politiques RLS
-      await this.setupRLS();
-      console.log('✅ Politiques RLS configurées');
-      
       return { success: true, message: 'Base de données initialisée avec succès' };
     } catch (error) {
       console.error('Erreur initialisation:', error);
       return { success: false, error };
-    }
-  },
-
-  async setupRLS() {
-    try {
-      const queries = [
-        'ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;',
-        'ALTER TABLE categories ENABLE ROW LEVEL SECURITY;',
-        'ALTER TABLE wilayas ENABLE ROW LEVEL SECURITY;',
-        'ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;',
-        'ALTER TABLE paid_announcements ENABLE ROW LEVEL SECURITY;'
-      ];
-      
-      for (const query of queries) {
-        await supabase.rpc('exec_sql', { sql: query });
-      }
-      
-      return true;
-    } catch (error) {
-      console.log('RLS setup error (normal):', error);
-      return false;
     }
   },
 

@@ -9,16 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, AlertCircle } from 'lucide-react';
-import { announcementService, categoryService, wilayaService } from '@/components/AnnouncementService';
+import { announcementService } from '@/components/AnnouncementService';
+import { categoryService } from '@/services/CategoryService';
+import { wilayaService } from '@/services/WilayaService';
 import { userService } from '@/components/UserService';
 import { toast } from '@/components/ui/use-toast';
-import type { Category, Wilaya } from '@/components/AnnouncementService';
 
 const CreateAnnouncement: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [wilayas, setWilayas] = useState<Wilaya[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [wilayas, setWilayas] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -222,7 +223,7 @@ const CreateAnnouncement: React.FC = () => {
                     <SelectContent>
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.icon} {category.name}
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
