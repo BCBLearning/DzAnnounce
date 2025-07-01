@@ -7,6 +7,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, User, Mail, Lock } from 'lucide-react';
 import { userService } from '@/components/UserService';
 import { toast } from '@/components/ui/use-toast';
+import { categoryService } from '@/services/CategoryService';
+import { wilayaService } from '@/services/WilayaService';
 
 const AdminSetup: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -47,7 +49,7 @@ const AdminSetup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
@@ -66,10 +68,19 @@ const AdminSetup: React.FC = () => {
         });
       } else {
         toast({
-          title: 'Succès',
-          description: 'Administrateur créé avec succès'
+          title: 'Initialisation',
+          description: 'Configuration des données de base...',
         });
-        // Recharger la page pour sortir du mode setup
+
+        // Initialiser les catégories et wilayas par défaut
+        await categoryService.initializeCategories();
+        await wilayaService.initializeWilayas();
+
+        toast({
+          title: 'Succès',
+          description: 'Administrateur et données de base créés avec succès',
+        });
+
         window.location.reload();
       }
     } catch (error) {
@@ -86,7 +97,6 @@ const AdminSetup: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Effacer l'erreur quand l'utilisateur tape
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -104,7 +114,7 @@ const AdminSetup: React.FC = () => {
             Créez le premier compte administrateur pour commencer
           </p>
         </CardHeader>
-        
+
         <CardContent>
           <Alert className="mb-6">
             <Shield className="h-4 w-4" />
@@ -129,9 +139,7 @@ const AdminSetup: React.FC = () => {
                   className={`pl-10 ${errors.fullName ? 'border-red-500' : ''}`}
                 />
               </div>
-              {errors.fullName && (
-                <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
-              )}
+              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
             </div>
 
             <div>
@@ -148,9 +156,7 @@ const AdminSetup: React.FC = () => {
                   className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
                 />
               </div>
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-              )}
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
             <div>
@@ -167,9 +173,7 @@ const AdminSetup: React.FC = () => {
                   className={`pl-10 ${errors.password ? 'border-red-500' : ''}`}
                 />
               </div>
-              {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-              )}
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
 
             <div>
@@ -186,9 +190,7 @@ const AdminSetup: React.FC = () => {
                   className={`pl-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                 />
               </div>
-              {errors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
-              )}
+              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
             </div>
 
             <Button

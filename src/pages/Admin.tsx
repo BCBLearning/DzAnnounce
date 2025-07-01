@@ -1,29 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, Users, FileText, BarChart3, Settings, Eye, Trash2, Database } from 'lucide-react';
+import { 
+  Shield, 
+  FileText, 
+  BarChart3, 
+  Database,
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { userService } from '@/components/UserService';
 import { announcementService } from '@/components/AnnouncementService';
 import { dataInitializer } from '@/components/DataInitializer';
+import { categoryService } from '@/components/CategoryService';
+import { wilayaService } from '@/components/WilayaService';
 import { toast } from '@/components/ui/use-toast';
 import type { Announcement } from '@/components/AnnouncementService';
+import type { Category } from '@/components/CategoryService';
+import type { Wilaya } from '@/components/WilayaService';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [wilayas, setWilayas] = useState<Wilaya[]>([]);
   const [initStatus, setInitStatus] = useState<any>(null);
   const [initializing, setInitializing] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [newWilaya, setNewWilaya] = useState({ code: '', name: '' });
+  const [editingWilaya, setEditingWilaya] = useState<Wilaya | null>(null);
+
   const [stats, setStats] = useState({
     totalAnnouncements: 0,
     activeAnnouncements: 0,
     pendingAnnouncements: 0,
-    totalViews: 0
+    totalViews: 0,
   });
 
   useEffect(() => {
@@ -41,8 +68,8 @@ const Admin: React.FC = () => {
         navigate('/');
         toast({
           title: 'Accès refusé',
-          description: 'Vous n\'avez pas les privilèges administrateur',
-          variant: 'destructive'
+          description: 'Vous n\\'avez pas les privilèges administrateur',
+          variant: 'destructive',
         });
         return;
       }
@@ -53,6 +80,38 @@ const Admin: React.FC = () => {
       navigate('/');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    try {
+      const { data: allAnnouncements } = await announcementService.getAnnouncements({ limit: 1000 });
+      const { data: categoryData } = await categoryService.getCategories();
+      const { data: wilayaData } = await wilayaService.getWilayas();
+
+      if (allAnnouncements) {
+        setAnnouncements(allAnnouncements);
+
+        const totalViews = allAnnouncements.reduce((sum, ann) => sum + (ann.views || 0), 0);
+        const activeCount = allAnnouncements.filter(ann => ann.status === 'active').length;
+        const pendingCount = allAnnouncements.filter(ann => ann.status === 'pending').length;
+
+        setStats({
+          totalAnnouncements: allAnnouncements.length,
+          activeAnnouncements: activeCount,
+          pendingAnnouncements: pendingCount,
+          totalViews,
+        });
+      }
+
+      setCategories(categoryData || []);
+      setWilayas(wilayaData || []);
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les données',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -72,51 +131,77 @@ const Admin: React.FC = () => {
       if (result.success) {
         toast({
           title: 'Succès',
-          description: 'Base de données initialisée avec succès'
+          description: 'Base de données initialisée avec succès',
         });
         await checkInitStatus();
+        await loadData();
       } else {
         toast({
           title: 'Erreur',
-          description: 'Erreur lors de l\'initialisation',
-          variant: 'destructive'
+          description: 'Erreur lors de l\\'initialisation',
+          variant: 'destructive',
         });
       }
     } catch (error) {
       toast({
         title: 'Erreur',
         description: 'Une erreur est survenue',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setInitializing(false);
     }
   };
 
-  const loadData = async () => {
-    try {
-      const { data: allAnnouncements } = await announcementService.getAnnouncements({ limit: 1000 });
-      
-      if (allAnnouncements) {
-        setAnnouncements(allAnnouncements);
-        
-        const totalViews = allAnnouncements.reduce((sum, ann) => sum + (ann.views || 0), 0);
-        const activeCount = allAnnouncements.filter(ann => ann.status === 'active').length;
-        const pendingCount = allAnnouncements.filter(ann => ann.status === 'pending').length;
-        
-        setStats({
-          totalAnnouncements: allAnnouncements.length,
-          activeAnnouncements: activeCount,
-          pendingAnnouncements: pendingCount,
-          totalViews
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les données',
-        variant: 'destructive'
-      });
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await categoryService.addCategory(newCategory);
+    toast({ title: 'Catégorie ajoutée' });
+    setNewCategory({ name: '', description: '' });
+    await loadData();
+  };
+
+  const handleUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingCategory) {
+      await categoryService.updateCategory(editingCategory.id, editingCategory);
+      toast({ title: 'Catégorie mise à jour' });
+      setEditingCategory(null);
+      await loadData();
+    }
+  };
+
+  const handleDeleteCategory = async (id: number) => {
+    if (confirm('Supprimer cette catégorie ?')) {
+      await categoryService.deleteCategory(id);
+      toast({ title: 'Catégorie supprimée' });
+      await loadData();
+    }
+  };
+
+  const handleAddWilaya = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await wilayaService.addWilaya(newWilaya);
+    toast({ title: 'Wilaya ajoutée' });
+    setNewWilaya({ code: '', name: '' });
+    await loadData();
+  };
+
+  const handleUpdateWilaya = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingWilaya) {
+      await wilayaService.updateWilaya(editingWilaya.id, editingWilaya);
+      toast({ title: 'Wilaya mise à jour' });
+      setEditingWilaya(null);
+      await loadData();
+    }
+  };
+
+  const handleDeleteWilaya = async (id: number) => {
+    if (confirm('Supprimer cette wilaya ?')) {
+      await wilayaService.deleteWilaya(id);
+      toast({ title: 'Wilaya supprimée' });
+      await loadData();
     }
   };
 
@@ -124,7 +209,7 @@ const Admin: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
           <p className="mt-2 text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -139,170 +224,233 @@ const Admin: React.FC = () => {
             <Shield className="h-8 w-8 text-blue-600" />
             <h1 className="text-3xl font-bold">Administration</h1>
             <Badge variant="secondary">
-              <Shield className="h-3 w-3 mr-1" />
-              Admin
+              <Shield className="h-3 w-3 mr-1" /> Admin
             </Badge>
           </div>
           <p className="text-gray-600">Gestion de la plateforme DzAnnounce</p>
         </div>
 
-        {/* Initialisation Database */}
-        {initStatus && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                Initialisation de la Base de Données
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                    <span>Catégories</span>
-                    <Badge variant={initStatus.categoriesCount > 0 ? 'default' : 'secondary'}>
-                      {initStatus.categoriesCount} initialisées
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                    <span>Wilayas</span>
-                    <Badge variant={initStatus.wilayasCount > 0 ? 'default' : 'secondary'}>
-                      {initStatus.wilayasCount} initialisées
-                    </Badge>
-                  </div>
-                </div>
-                
-                {!initStatus.isInitialized && (
-                  <Alert>
-                    <AlertDescription>
-                      La base de données n'est pas encore initialisée. Cliquez sur le bouton ci-dessous pour initialiser les catégories, wilayas et le système payant.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button 
-                  onClick={handleInitializeDatabase}
-                  disabled={initializing}
-                  className="w-full"
-                >
-                  {initializing ? 'Initialisation...' : 'Initialiser la Base de Données'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Annonces</p>
-                  <p className="text-2xl font-bold">{stats.totalAnnouncements}</p>
-                </div>
-                <FileText className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Actives</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.activeAnnouncements}</p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">En Attente</p>
-                  <p className="text-2xl font-bold text-orange-600">{stats.pendingAnnouncements}</p>
-                </div>
-                <Settings className="h-8 w-8 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Vues</p>
-                  <p className="text-2xl font-bold text-purple-600">{stats.totalViews}</p>
-                </div>
-                <Eye className="h-8 w-8 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="announcements" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="announcements">Annonces</TabsTrigger>
-            <TabsTrigger value="settings">Paramètres</TabsTrigger>
+        <Tabs defaultValue="stats">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="stats">
+              <BarChart3 className="h-4 w-4 mr-2" /> Statistiques
+            </TabsTrigger>
+            <TabsTrigger value="categories">
+              <FileText className="h-4 w-4 mr-2" /> Catégories
+            </TabsTrigger>
+            <TabsTrigger value="wilayas">
+              <Database className="h-4 w-4 mr-2" /> Wilayas
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="announcements">
+          <TabsContent value="stats">
             <Card>
               <CardHeader>
-                <CardTitle>Gestion des Annonces</CardTitle>
+                <CardTitle>Statistiques</CardTitle>
               </CardHeader>
-              <CardContent>
-                {announcements.length === 0 ? (
-                  <Alert>
-                    <AlertDescription>
-                      Aucune annonce trouvée.
-                    </AlertDescription>
-                  </Alert>
+              <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="border p-4 rounded-lg">
+                  <h3 className="font-medium">Annonces totales</h3>
+                  <p className="text-2xl font-bold">{stats.totalAnnouncements}</p>
+                </div>
+                <div className="border p-4 rounded-lg">
+                  <h3 className="font-medium">Annonces actives</h3>
+                  <p className="text-2xl font-bold">{stats.activeAnnouncements}</p>
+                </div>
+                <div className="border p-4 rounded-lg">
+                  <h3 className="font-medium">Annonces en attente</h3>
+                  <p className="text-2xl font-bold">{stats.pendingAnnouncements}</p>
+                </div>
+                <div className="border p-4 rounded-lg">
+                  <h3 className="font-medium">Vues totales</h3>
+                  <p className="text-2xl font-bold">{stats.totalViews}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {initStatus && !initStatus.initialized && (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle>Initialisation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={handleInitializeDatabase}
+                    disabled={initializing}
+                  >
+                    {initializing ? 'Initialisation...' : 'Initialiser la base de données'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="categories">
+            <Card>
+              <CardHeader>
+                <CardTitle>Catégories</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    const name = form.name.value.trim();
+                    const description = form.description.value.trim();
+                    if (!name) return;
+
+                    try {
+                      const { data, error } = await categoryService.addCategory({ name, description });
+                      if (error) throw error;
+                      toast({ title: 'Catégorie ajoutée' });
+                      form.reset();
+                      await loadData();
+                    } catch {
+                      toast({ title: 'Erreur ajout catégorie', variant: 'destructive' });
+                    }
+                  }}
+                  className="flex flex-col gap-2"
+                >
+                  <Input name="name" placeholder="Nom" required />
+                  <Input name="description" placeholder="Description" />
+                  <Button type="submit">Ajouter</Button>
+                </form>
+
+                {categories.length === 0 ? (
+                  <Alert><AlertDescription>Aucune catégorie</AlertDescription></Alert>
                 ) : (
-                  <div className="space-y-4">
-                    {announcements.slice(0, 10).map((announcement) => (
-                      <div key={announcement.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold">{announcement.title}</h3>
-                              <Badge variant={announcement.status === 'active' ? 'default' : 'secondary'}>
-                                {announcement.status}
-                              </Badge>
-                            </div>
-                            <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                              {announcement.description}
-                            </p>
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
-                              <span className="font-medium text-blue-600">
-                                {announcement.price.toLocaleString()} DA
-                              </span>
-                              <span>{announcement.views || 0} vues</span>
-                            </div>
-                          </div>
+                  <ul className="space-y-2">
+                    {categories.map((cat) => (
+                      <li key={cat.id} className="p-3 border rounded flex justify-between items-center">
+                        <div>
+                          <strong>{cat.name}</strong> — {cat.description}
                         </div>
-                      </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={async () => {
+                              const newName = prompt('Nouveau nom', cat.name);
+                              if (!newName) return;
+                              try {
+                                await categoryService.updateCategory(cat.id, {
+                                  name: newName,
+                                  description: cat.description,
+                                });
+                                toast({ title: 'Catégorie mise à jour' });
+                                await loadData();
+                              } catch {
+                                toast({ title: 'Erreur mise à jour', variant: 'destructive' });
+                              }
+                            }}
+                          >
+                            Modifier
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={async () => {
+                              if (confirm('Supprimer cette catégorie ?')) {
+                                try {
+                                  await categoryService.deleteCategory(cat.id);
+                                  toast({ title: 'Catégorie supprimée' });
+                                  await loadData();
+                                } catch {
+                                  toast({ title: 'Erreur suppression', variant: 'destructive' });
+                                }
+                              }
+                            }}
+                          >
+                            Supprimer
+                          </Button>
+                        </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings">
+          <TabsContent value="wilayas">
             <Card>
               <CardHeader>
-                <CardTitle>Paramètres de la Plateforme</CardTitle>
+                <CardTitle>Wilayas</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Alert>
-                  <Settings className="h-4 w-4" />
-                  <AlertDescription>
-                    Application opérationnelle avec base de données initialisée.
-                    Catégories, wilayas et système payant configurés.
-                  </AlertDescription>
-                </Alert>
+              <CardContent className="space-y-4">
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    const code = form.code.value.trim();
+                    const name = form.name.value.trim();
+                    if (!code || !name) return;
+
+                    try {
+                      const { data, error } = await wilayaService.addWilaya({ code, name });
+                      if (error) throw error;
+                      toast({ title: 'Wilaya ajoutée' });
+                      form.reset();
+                      await loadData();
+                    } catch {
+                      toast({ title: 'Erreur ajout wilaya', variant: 'destructive' });
+                    }
+                  }}
+                  className="flex flex-col gap-2"
+                >
+                  <Input name="code" placeholder="Code" required />
+                  <Input name="name" placeholder="Nom" required />
+                  <Button type="submit">Ajouter</Button>
+                </form>
+
+                {wilayas.length === 0 ? (
+                  <Alert><AlertDescription>Aucune wilaya</AlertDescription></Alert>
+                ) : (
+                  <ul className="space-y-2">
+                    {wilayas.map((w) => (
+                      <li key={w.id} className="p-3 border rounded flex justify-between items-center">
+                        <div>
+                          <strong>{w.code}</strong> — {w.name}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={async () => {
+                              const newName = prompt('Nouveau nom', w.name);
+                              if (!newName) return;
+                              try {
+                                await wilayaService.updateWilaya(w.id, {
+                                  code: w.code,
+                                  name: newName,
+                                });
+                                toast({ title: 'Wilaya mise à jour' });
+                                await loadData();
+                              } catch {
+                                toast({ title: 'Erreur mise à jour', variant: 'destructive' });
+                              }
+                            }}
+                          >
+                            Modifier
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={async () => {
+                              if (confirm('Supprimer cette wilaya ?')) {
+                                try {
+                                  await wilayaService.deleteWilaya(w.id);
+                                  toast({ title: 'Wilaya supprimée' });
+                                  await loadData();
+                                } catch {
+                                  toast({ title: 'Erreur suppression', variant: 'destructive' });
+                                }
+                              }
+                            }}
+                          >
+                            Supprimer
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
