@@ -8,7 +8,7 @@ export interface Wilaya {
 }
 
 class WilayaService {
-  private defaultWilayas = [
+  private defaultWilayas: Wilaya[] = [
     { id: 1, name: 'Adrar', code: '01' },
     { id: 2, name: 'Chlef', code: '02' },
     { id: 3, name: 'Laghouat', code: '03' },
@@ -67,13 +67,13 @@ class WilayaService {
         .order('name');
 
       if (error) {
-        console.log('Using default wilayas:', error.message);
+        console.warn('Erreur Supabase, fallback vers valeurs par défaut:', error.message);
         return { data: this.defaultWilayas, error: null };
       }
-      
+
       return { data: data || this.defaultWilayas, error: null };
     } catch (error) {
-      console.error('Error fetching wilayas:', error);
+      console.error('Erreur getWilayas:', error);
       return { data: this.defaultWilayas, error };
     }
   }
@@ -89,43 +89,87 @@ class WilayaService {
       if (error) {
         return this.defaultWilayas.find(w => w.id === id) || null;
       }
+
       return data;
     } catch (error) {
-      console.error('Error fetching wilaya:', error);
+      console.error('Erreur getWilayaById:', error);
       return this.defaultWilayas.find(w => w.id === id) || null;
+    }
+  }
+
+  async createWilaya(wilaya: Omit<Wilaya, 'id'>) {
+    try {
+      const { data, error } = await supabase
+        .from('wilayas')
+        .insert([wilaya])
+        .select()
+        .single();
+
+      return { data, error };
+    } catch (error) {
+      console.error('Erreur createWilaya:', error);
+      return { data: null, error };
+    }
+  }
+
+  async updateWilaya(id: number, updates: Partial<Wilaya>) {
+    try {
+      const { data, error } = await supabase
+        .from('wilayas')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      return { data, error };
+    } catch (error) {
+      console.error('Erreur updateWilaya:', error);
+      return { data: null, error };
+    }
+  }
+
+  async deleteWilaya(id: number) {
+    try {
+      const { error } = await supabase
+        .from('wilayas')
+        .delete()
+        .eq('id', id);
+
+      return { success: !error, error };
+    } catch (error) {
+      console.error('Erreur deleteWilaya:', error);
+      return { success: false, error };
     }
   }
 
   async initializeWilayas() {
     try {
-      // Check if wilayas already exist
       const { data: existing } = await supabase
         .from('wilayas')
         .select('id')
         .limit(1);
 
       if (existing && existing.length > 0) {
-        console.log('Wilayas already initialized');
+        console.log('Wilayas déjà initialisées');
         return { success: true, message: 'Wilayas already exist' };
       }
 
-      // Insert default wilayas
       const { error } = await supabase
         .from('wilayas')
-        .insert(this.defaultWilayas.map(wilaya => ({
-          name: wilaya.name,
-          code: wilaya.code
+        .insert(this.defaultWilayas.map(w => ({
+          name: w.name,
+          code: w.code
         })));
 
       if (error) {
-        console.error('Error initializing wilayas:', error);
+        console.error('Erreur initializeWilayas:', error);
         return { success: false, error };
       }
 
-      console.log('Wilayas initialized successfully');
+      console.log('Wilayas initialisées');
       return { success: true, message: 'Wilayas initialized' };
     } catch (error) {
-      console.error('Error in initializeWilayas:', error);
+      console.error('Erreur globale initializeWilayas:', error);
       return { success: false, error };
     }
   }

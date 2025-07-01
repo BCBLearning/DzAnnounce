@@ -9,7 +9,7 @@ export interface Category {
 }
 
 class CategoryService {
-  private defaultCategories = [
+  private defaultCategories: Category[] = [
     { id: 1, name: 'Véhicules', icon: 'Car', description: 'Voitures, motos, camions' },
     { id: 2, name: 'Immobilier', icon: 'Home', description: 'Vente et location' },
     { id: 3, name: 'Électronique', icon: 'Smartphone', description: 'Téléphones, ordinateurs' },
@@ -28,13 +28,13 @@ class CategoryService {
         .order('name');
 
       if (error) {
-        console.log('Using default categories:', error.message);
+        console.warn('Utilisation des catégories par défaut :', error.message);
         return { data: this.defaultCategories, error: null };
       }
-      
+
       return { data: data || this.defaultCategories, error: null };
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('Erreur lors du chargement des catégories :', error);
       return { data: this.defaultCategories, error };
     }
   }
@@ -48,30 +48,73 @@ class CategoryService {
         .single();
 
       if (error) {
-        // Fallback to default category
         return this.defaultCategories.find(cat => cat.id === id) || null;
       }
+
       return data;
     } catch (error) {
-      console.error('Error fetching category:', error);
+      console.error('Erreur lors de la récupération de la catégorie :', error);
       return this.defaultCategories.find(cat => cat.id === id) || null;
+    }
+  }
+
+  async createCategory(category: Omit<Category, 'id'>) {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([category])
+        .select()
+        .single();
+
+      return { data, error };
+    } catch (error) {
+      console.error('Erreur lors de la création de la catégorie :', error);
+      return { data: null, error };
+    }
+  }
+
+  async updateCategory(id: number, updates: Partial<Category>) {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      return { data, error };
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la catégorie :', error);
+      return { data: null, error };
+    }
+  }
+
+  async deleteCategory(id: number) {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      return { success: !error, error };
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la catégorie :', error);
+      return { success: false, error };
     }
   }
 
   async initializeCategories() {
     try {
-      // Check if categories already exist
       const { data: existing } = await supabase
         .from('categories')
         .select('id')
         .limit(1);
 
       if (existing && existing.length > 0) {
-        console.log('Categories already initialized');
-        return { success: true, message: 'Categories already exist' };
+        console.log('Les catégories sont déjà initialisées.');
+        return { success: true, message: 'Catégories déjà existantes' };
       }
 
-      // Insert default categories
       const { error } = await supabase
         .from('categories')
         .insert(this.defaultCategories.map(cat => ({
@@ -81,14 +124,14 @@ class CategoryService {
         })));
 
       if (error) {
-        console.error('Error initializing categories:', error);
+        console.error('Erreur lors de l\'initialisation des catégories :', error);
         return { success: false, error };
       }
 
-      console.log('Categories initialized successfully');
-      return { success: true, message: 'Categories initialized' };
+      console.log('Catégories initialisées avec succès.');
+      return { success: true, message: 'Catégories initialisées' };
     } catch (error) {
-      console.error('Error in initializeCategories:', error);
+      console.error('Erreur dans initializeCategories :', error);
       return { success: false, error };
     }
   }
