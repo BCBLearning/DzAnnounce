@@ -8,6 +8,8 @@ export interface Category {
   created_at?: string;
 }
 
+type NewCategory = Omit<Category, 'id' | 'created_at'>;
+
 class CategoryService {
   private defaultCategories: Category[] = [
     { id: 1, name: 'Véhicules', icon: 'Car', description: 'Voitures, motos, camions' },
@@ -17,7 +19,7 @@ class CategoryService {
     { id: 5, name: 'Maison & Jardin', icon: 'Hammer', description: 'Meubles, décoration' },
     { id: 6, name: 'Emploi', icon: 'Briefcase', description: 'Offres d\'emploi' },
     { id: 7, name: 'Services', icon: 'Wrench', description: 'Services professionnels' },
-    { id: 8, name: 'Autres', icon: 'ShoppingBag', description: 'Divers' }
+    { id: 8, name: 'Autres', icon: 'ShoppingBag', description: 'Divers' },
   ];
 
   async getCategories() {
@@ -47,18 +49,14 @@ class CategoryService {
         .eq('id', id)
         .single();
 
-      if (error) {
-        return this.defaultCategories.find(cat => cat.id === id) || null;
-      }
-
-      return data;
+      return error ? this.defaultCategories.find(cat => cat.id === id) || null : data;
     } catch (error) {
       console.error('Erreur lors de la récupération de la catégorie :', error);
       return this.defaultCategories.find(cat => cat.id === id) || null;
     }
   }
 
-  async createCategory(category: Omit<Category, 'id'>) {
+  async addCategory(category: NewCategory) {
     try {
       const { data, error } = await supabase
         .from('categories')
@@ -68,7 +66,7 @@ class CategoryService {
 
       return { data, error };
     } catch (error) {
-      console.error('Erreur lors de la création de la catégorie :', error);
+      console.error('Erreur lors de l\'ajout de la catégorie :', error);
       return { data: null, error };
     }
   }
@@ -117,11 +115,13 @@ class CategoryService {
 
       const { error } = await supabase
         .from('categories')
-        .insert(this.defaultCategories.map(cat => ({
-          name: cat.name,
-          icon: cat.icon,
-          description: cat.description
-        })));
+        .insert(
+          this.defaultCategories.map(({ name, icon, description }) => ({
+            name,
+            icon,
+            description,
+          }))
+        );
 
       if (error) {
         console.error('Erreur lors de l\'initialisation des catégories :', error);

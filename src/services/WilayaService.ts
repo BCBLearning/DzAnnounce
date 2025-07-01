@@ -7,6 +7,8 @@ export interface Wilaya {
   created_at?: string;
 }
 
+type NewWilaya = Omit<Wilaya, 'id' | 'created_at'>;
+
 class WilayaService {
   private defaultWilayas: Wilaya[] = [
     { id: 1, name: 'Adrar', code: '01' },
@@ -71,7 +73,7 @@ class WilayaService {
         return { data: this.defaultWilayas, error: null };
       }
 
-      return { data: data || this.defaultWilayas, error: null };
+      return { data: data ?? this.defaultWilayas, error: null };
     } catch (error) {
       console.error('Erreur getWilayas:', error);
       return { data: this.defaultWilayas, error };
@@ -86,18 +88,14 @@ class WilayaService {
         .eq('id', id)
         .single();
 
-      if (error) {
-        return this.defaultWilayas.find(w => w.id === id) || null;
-      }
-
-      return data;
+      return error ? this.defaultWilayas.find(w => w.id === id) || null : data;
     } catch (error) {
       console.error('Erreur getWilayaById:', error);
       return this.defaultWilayas.find(w => w.id === id) || null;
     }
   }
 
-  async createWilaya(wilaya: Omit<Wilaya, 'id'>) {
+  async addWilaya(wilaya: NewWilaya) {
     try {
       const { data, error } = await supabase
         .from('wilayas')
@@ -107,7 +105,7 @@ class WilayaService {
 
       return { data, error };
     } catch (error) {
-      console.error('Erreur createWilaya:', error);
+      console.error('Erreur addWilaya:', error);
       return { data: null, error };
     }
   }
@@ -151,15 +149,12 @@ class WilayaService {
 
       if (existing && existing.length > 0) {
         console.log('Wilayas déjà initialisées');
-        return { success: true, message: 'Wilayas already exist' };
+        return { success: true, message: 'Wilayas déjà existantes' };
       }
 
       const { error } = await supabase
         .from('wilayas')
-        .insert(this.defaultWilayas.map(w => ({
-          name: w.name,
-          code: w.code
-        })));
+        .insert(this.defaultWilayas.map(({ name, code }) => ({ name, code })));
 
       if (error) {
         console.error('Erreur initializeWilayas:', error);
@@ -167,7 +162,7 @@ class WilayaService {
       }
 
       console.log('Wilayas initialisées');
-      return { success: true, message: 'Wilayas initialized' };
+      return { success: true, message: 'Wilayas initialisées' };
     } catch (error) {
       console.error('Erreur globale initializeWilayas:', error);
       return { success: false, error };
