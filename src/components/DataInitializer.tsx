@@ -1,5 +1,6 @@
-import { categoryService } from './CategoryService';
-import { wilayaService } from './WilayaService';
+import { categoryService } from '@/services/CategoryService';
+import { wilayaService } from '@/services/WilayaService';
+// import { paymentService } from '@/services/PaymentService'; // ← si nécessaire
 // import { paymentService } from './PaymentService'; // ← si nécessaire
 
 export interface InitStatus {
