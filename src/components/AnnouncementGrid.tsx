@@ -47,14 +47,18 @@ export const AnnouncementGrid: React.FC<AnnouncementGridProps> = ({
   selectedLocation = ''
 }) => {
   // Filter announcements based on search criteria
-  const filteredAnnouncements = announcements.filter(announcement => {
-    const matchesSearch = !searchTerm || 
+  const filteredAnnouncements = announcements.filter((announcement) => {
+    const matchesSearch =
+      !searchTerm ||
       announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       announcement.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = !selectedCategory || announcement.category === selectedCategory;
-    const matchesLocation = !selectedLocation || announcement.location === selectedLocation;
-    
+
+    const matchesCategory =
+      selectedCategory === 'all' || !selectedCategory || announcement.category === selectedCategory;
+
+    const matchesLocation =
+      selectedLocation === 'all' || !selectedLocation || announcement.location === selectedLocation;
+
     return matchesSearch && matchesCategory && matchesLocation;
   });
 

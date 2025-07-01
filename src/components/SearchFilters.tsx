@@ -34,10 +34,13 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
         wilayaService.getWilayas()
       ]);
 
+      console.log('Catégories chargées:', categoriesResult.data);
+      console.log('Wilayas chargées:', wilayasResult.data);
+
       setCategories(categoriesResult.data || []);
       setWilayas(wilayasResult.data || []);
     } catch (error) {
-      console.error('Error loading filter data:', error);
+      console.error('Erreur lors du chargement des filtres :', error);
     }
   };
 
@@ -50,9 +53,9 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
+    <div className="bg-white p-6 rounded-lg shadow-sm border z-10 relative">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Champ recherche texte */}
+        {/* Recherche texte */}
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
@@ -71,13 +74,17 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
               <SelectValue placeholder="Catégorie" />
             </div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-50">
             <SelectItem value="all">Toutes les catégories</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id.toString()}>
-                {category.name}
-              </SelectItem>
-            ))}
+            {categories.length === 0 ? (
+              <div className="px-4 py-2 text-sm text-gray-500">Aucune catégorie</div>
+            ) : (
+              categories.map((category) => (
+                <SelectItem key={category.id} value={category.id.toString()}>
+                  {category.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
 
@@ -89,13 +96,17 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
               <SelectValue placeholder="Wilaya" />
             </div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-50">
             <SelectItem value="all">Toutes les wilayas</SelectItem>
-            {wilayas.map((wilaya) => (
-              <SelectItem key={wilaya.id} value={wilaya.id.toString()}>
-                {wilaya.name}
-              </SelectItem>
-            ))}
+            {wilayas.length === 0 ? (
+              <div className="px-4 py-2 text-sm text-gray-500">Aucune wilaya</div>
+            ) : (
+              wilayas.map((wilaya) => (
+                <SelectItem key={wilaya.id} value={wilaya.id.toString()}>
+                  {wilaya.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
 
