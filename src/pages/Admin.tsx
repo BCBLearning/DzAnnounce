@@ -68,7 +68,7 @@ const Admin: React.FC = () => {
         navigate('/');
         toast({
           title: 'Accès refusé',
-          description: `Erreur lors de l'initialisation`,
+          description: `Vous n'avez pas les privilèges administrateur`,
           variant: 'destructive',
         });
         return;
@@ -138,7 +138,7 @@ const Admin: React.FC = () => {
       } else {
         toast({
           title: 'Erreur',
-          description: 'Erreur lors de l\\'initialisation',
+          description: `Erreur lors de l'initialisation`,
           variant: 'destructive',
         });
       }
