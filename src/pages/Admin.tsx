@@ -1,36 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Shield, 
-  FileText, 
-  BarChart3, 
+import {
+  Shield,
+  FileText,
+  BarChart3,
   Database,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+
+import { toast } from '@/components/ui/use-toast';
 import { userService } from '@/components/UserService';
 import { announcementService } from '@/components/AnnouncementService';
 import { dataInitializer } from '@/components/DataInitializer';
-import { categoryService } from '@/components/CategoryService';
-import { wilayaService } from '@/components/WilayaService';
-import { toast } from '@/components/ui/use-toast';
+
+// ✅ Chemins corrigés vers /services
+import { categoryService } from '@/services/CategoryService';
+import { wilayaService } from '@/services/WilayaService';
+
+// ✅ Types corrigés également
 import type { Announcement } from '@/components/AnnouncementService';
-import type { Category } from '@/components/CategoryService';
-import type { Wilaya } from '@/components/WilayaService';
+import type { Category } from '@/services/CategoryService';
+import type { Wilaya } from '@/services/WilayaService';
+
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
