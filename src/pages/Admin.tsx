@@ -29,6 +29,8 @@ import { announcementService } from '@/components/AnnouncementService';
 import { dataInitializer } from '@/components/DataInitializer';
 
 import { userAdminService } from '@/services/UserAdminService';
+import { userService } from '@/services/UserService';
+
 import type { User } from '@/services/UserService';
 
 // ✅ Chemins corrigés vers /services
@@ -60,43 +62,60 @@ const Admin: React.FC = () => {
     activeAnnouncements: 0,
     pendingAnnouncements: 0,
     totalViews: 0,
-  });
-  const [userList, setUserList] = useState<User[]>([]);
+  });const [userList, setUserList] = useState<User[]>([]);
 
 const loadUserList = async () => {
-  const { data } = await userAdminService.getUsers();
-  setUserList(data || []);
+  console.log("🔄 Chargement des utilisateurs...");
+  try {
+    const { data } = await userAdminService.getUsers();
+    console.log("✅ Utilisateurs récupérés :", data);
+    setUserList(data || []);
+  } catch (err) {
+    console.error("❌ Erreur lors du chargement des utilisateurs :", err);
+  }
 };
 
-  useEffect(() => {
-    checkAdminAccess();
-  }, []);
+// 🟢 C’est ici que tu dois insérer le useEffect
+useEffect(() => {
+  checkAdminAccess();
+}, []);
+  
 
   const checkAdminAccess = async () => {
-    try {
-      const { data } = await userService.getCurrentUser();
-      if (!data) {
-        navigate('/login');
-        return;
-      }
-      if (data.role !== 'admin') {
-        navigate('/');
-        toast({
-          title: 'Accès refusé',
-          description: `Vous n'avez pas les privilèges administrateur`,
-          variant: 'destructive',
-        });
-        return;
-      }
-      setUser(data);
-      await loadData();
-      await checkInitStatus();
-    } catch (error) {
-      navigate('/');
-    } finally {
-      setLoading(false);
+  try {
+    const { data } = await userService.getCurrentUser();
+    console.log("👤 Utilisateur connecté :", data);
+
+    if (!data) {
+      console.warn("❌ Aucun utilisateur, redirection login");
+      navigate('/login');
+      return;
     }
-  };
+
+    if (data.role !== 'admin') {
+      console.warn("🚫 Utilisateur non admin, redirection accueil");
+      toast({
+        title: 'Accès refusé',
+        description: `Vous n'avez pas les privilèges administrateur`,
+        variant: 'destructive',
+      });
+      navigate('/');
+      return;
+    }
+
+    console.log("✅ Accès admin confirmé");
+    setUser(data);
+
+    await loadData();
+    await checkInitStatus();
+    await loadUserList(); // ⬅️ important ici
+  } catch (error) {
+    console.error("❗️Erreur dans checkAdminAccess :", error);
+    navigate('/');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const loadData = async () => {
     try {
