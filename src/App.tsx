@@ -9,6 +9,7 @@ import Login from '@/pages/Login';
 import Admin from '@/pages/Admin';
 import CreateAnnouncement from '@/pages/CreateAnnouncement';
 import NotFound from '@/pages/NotFound';
+import ProfilePage from '@/pages/ProfilePage'; // ✅
 
 function App() {
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
@@ -55,13 +56,14 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <main>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/create-announcement" element={<CreateAnnouncement />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+         <Routes>
+  <Route path="/" element={<Index />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/admin" element={<Admin />} />
+  <Route path="/create-announcement" element={<CreateAnnouncement />} />
+  <Route path="/profile" element={<ProfilePage />} /> {/* ✅ nouvelle route */}
+  <Route path="*" element={<NotFound />} />
+</Routes>
         </main>
         <Toaster />
       </div>

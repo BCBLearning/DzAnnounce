@@ -16,9 +16,14 @@ const Login: React.FC = () => {
   const [tab, setTab] = useState('login');
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ email: '', password: '', fullName: '', confirmPassword: '' });
+  const [registerData, setRegisterData] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    confirmPassword: ''
+  });
 
-  // 🔄 Détecte le hash de l'URL (ex: #register)
+  // 🎯 Bascule auto vers le tab d'inscription si #register
   useEffect(() => {
     if (location.hash === '#register') {
       setTab('register');
@@ -49,59 +54,59 @@ const Login: React.FC = () => {
   };
 
   const handleRegister = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (registerData.password !== registerData.confirmPassword) {
-    toast({ title: 'Erreur', description: 'Les mots de passe ne correspondent pas', variant: 'destructive' });
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    console.log('🔵 Envoi signup à Supabase', registerData);
-
-    const { data, error } = await supabase.auth.signUp({
-      email: registerData.email,
-      password: registerData.password,
-      options: {
-        data: {
-          full_name: registerData.fullName,
-          role: 'user',
-        },
-      },
-    });
-
-    console.log('✅ Résultat signUp:', data);
-
-    if (error) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    if (registerData.password !== registerData.confirmPassword) {
+      toast({ title: 'Erreur', description: 'Les mots de passe ne correspondent pas', variant: 'destructive' });
       return;
     }
 
-    // ➕ Étape clé : Si pas de session, se reconnecter manuellement
-    if (!data.session) {
-      const { error: loginError } = await supabase.auth.signInWithPassword({
+    setLoading(true);
+
+    try {
+      console.log('🔵 Envoi signup à Supabase', registerData);
+
+      const { data, error } = await supabase.auth.signUp({
         email: registerData.email,
         password: registerData.password,
+        options: {
+          data: {
+            full_name: registerData.fullName,
+            role: 'user',
+          }
+        }
       });
 
-      if (loginError) {
-        console.error('❌ Erreur connexion post-signup:', loginError.message);
-        toast({ title: 'Erreur', description: loginError.message, variant: 'destructive' });
+      console.log('✅ Résultat signUp:', data);
+
+      if (error) {
+        toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
         return;
       }
-    }
 
-    toast({ title: 'Succès', description: 'Compte créé avec succès' });
-    navigate('/');
-  } catch (err) {
-    console.error('❌ Exception Signup:', err);
-    toast({ title: 'Erreur', description: 'Une erreur est survenue', variant: 'destructive' });
-  } finally {
-    setLoading(false);
-  }
-};
+      // ⚠️ Si pas de session (email non confirmé), on reconnecte
+      if (!data.session) {
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: registerData.email,
+          password: registerData.password
+        });
+
+        if (loginError) {
+          console.error('❌ Erreur connexion post-signup:', loginError.message);
+          toast({ title: 'Erreur', description: loginError.message, variant: 'destructive' });
+          return;
+        }
+      }
+
+      toast({ title: 'Succès', description: 'Compte créé avec succès' });
+      navigate('/');
+    } catch (err) {
+      console.error('❌ Exception Signup:', err);
+      toast({ title: 'Erreur', description: 'Une erreur est survenue', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -118,6 +123,7 @@ const Login: React.FC = () => {
               <TabsTrigger value="register">Inscription</TabsTrigger>
             </TabsList>
 
+            {/* --- Connexion --- */}
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
@@ -157,6 +163,7 @@ const Login: React.FC = () => {
               </form>
             </TabsContent>
 
+            {/* --- Inscription --- */}
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>

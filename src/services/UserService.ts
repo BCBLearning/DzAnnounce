@@ -29,24 +29,39 @@ export const userService = {
       return { data: null, error };
     }
   },
-
-  async createAdmin(email: string, password: string, fullName: string) {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: 'admin'
-          }
+async createAdmin(email: string, password: string, fullName: string) {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: 'admin'
         }
-      });
-      return { data, error };
-    } catch (error) {
+      }
+    });
+
+    if (error || !data?.user?.id) {
       return { data: null, error };
     }
-  },
+
+    // 👇 Forcer la vérification email (fonction RPC Supabase)
+    const { error: rpcError } = await supabase.rpc('verify_user_email', {
+      uid: data.user.id
+    });
+
+    if (rpcError) {
+      console.error('Erreur forçage vérification email:', rpcError);
+    }
+
+    return { data, error: rpcError || error };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+,
+  
 
   async isAdmin() {
     try {
@@ -58,25 +73,20 @@ export const userService = {
   },
 
   async checkAdminExists() {
-    try {
-      // Vérifier dans la table profiles
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1);
-      
-      if (error) {
-        console.log('Erreur vérification admin:', error);
-        return false;
-      }
-      
-      return data && data.length > 0;
-    } catch (error) {
-      console.log('Erreur checkAdminExists:', error);
+  try {
+    const { data, error } = await supabase.rpc('admin_exists_with_verified_email');
+
+    if (error) {
+      console.error('Erreur Supabase RPC:', error);
       return false;
     }
-  },
+
+    return data === true;
+  } catch (error) {
+    console.error('Erreur checkAdminExists:', error);
+    return false;
+  }
+},
 
   async signIn(email: string, password: string) {
     try {
