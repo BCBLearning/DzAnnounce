@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, User, Settings, LogOut, Shield, Menu, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { userService } from "@/services/UserService";
+import type { User as UserType } from "@/services/UserService";
 
 
 import { toast } from '@/components/ui/use-toast';
@@ -41,24 +42,25 @@ const Header: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-      navigate('/');
-      toast({
-        title: 'Déconnexion',
-        description: 'Vous avez été déconnecté avec succès'
-      });
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Erreur lors de la déconnexion',
-        variant: 'destructive'
-      });
-    }
-  };
+const handleSignOut = async () => {
+  console.log("🔴 Bouton Se déconnecter cliqué");
+  try {
+    await supabase.auth.signOut();
+    setUser(null);
+    navigate('/');
+    toast({
+      title: 'Déconnexion',
+      description: 'Vous avez été déconnecté avec succès'
+    });
+  } catch (error) {
+    toast({
+      title: 'Erreur',
+      description: 'Erreur lors de la déconnexion',
+      variant: 'destructive'
+    });
+  }
+};
+  
 
   const getInitials = (name: string) => {
     return name
@@ -172,9 +174,9 @@ const Header: React.FC = () => {
                 <Button variant="ghost" asChild>
                   <Link to="/login">Connexion</Link>
                 </Button>
-                <Button asChild>
-                  <Link to="/register">S'inscrire</Link>
-                </Button>
+              <Button asChild>
+  <Link to="/login#register">S'inscrire</Link>
+</Button>
               </div>
             )}
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,14 +11,24 @@ import { toast } from '@/components/ui/use-toast';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [tab, setTab] = useState('login');
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({ email: '', password: '', fullName: '', confirmPassword: '' });
 
+  // 🔄 Détecte le hash de l'URL (ex: #register)
+  useEffect(() => {
+    if (location.hash === '#register') {
+      setTab('register');
+    }
+  }, [location]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginData.email,
@@ -39,39 +49,71 @@ const Login: React.FC = () => {
   };
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (registerData.password !== registerData.confirmPassword) {
-      toast({ title: 'Erreur', description: 'Les mots de passe ne correspondent pas', variant: 'destructive' });
-      return;
-    }
+  e.preventDefault();
 
-    setLoading(true);
-    
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: registerData.email,
-        password: registerData.password,
-        options: {
-          data: {
-            full_name: registerData.fullName,
-            role: 'user'
-          }
+  if (registerData.password !== registerData.confirmPassword) {
+    toast({ title: 'Erreur', description: 'Les mots de passe ne correspondent pas', variant: 'destructive' });
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    console.log('📤 Envoi signup à Supabase', registerData);
+
+    const { data, error } = await supabase.auth.signUp({
+      email: registerData.email,
+      password: registerData.password,
+      options: {
+        data: {
+          full_name: registerData.fullName,
+          role: 'user'
         }
-      });
-
-      if (error) {
-        toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
-      } else {
-        toast({ title: 'Succès', description: 'Compte créé avec succès' });
-        navigate('/');
       }
-    } catch (error) {
-      toast({ title: 'Erreur', description: 'Une erreur est survenue', variant: 'destructive' });
-    } finally {
-      setLoading(false);
+    });
+
+    console.log('✅ Résultat signUp:', { data, error });
+
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Succès', description: 'Compte créé avec succès' });
+
+      // 🔍 Vérification immédiate du profil dans `profiles`
+      const userId = data.user?.id;
+
+      if (userId) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        console.log('🔍 Vérif profil:', { profile, profileError });
+
+        if (!profile || profileError) {
+          toast({
+            title: "⚠️ Profil manquant",
+            description: "Le profil n’a pas été créé automatiquement.",
+            variant: 'destructive'
+          });
+        } else {
+          toast({
+            title: "✅ Profil créé",
+            description: `Bienvenue ${profile.full_name}`
+          });
+        }
+      }
+
+      navigate('/');
     }
-  };
+  } catch (error) {
+    console.error('❌ Erreur JS :', error);
+    toast({ title: 'Erreur', description: 'Une erreur est survenue', variant: 'destructive' });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -80,14 +122,14 @@ const Login: React.FC = () => {
           <CardTitle className="text-2xl font-bold">DzAnnounce</CardTitle>
           <p className="text-gray-600">Connectez-vous à votre compte</p>
         </CardHeader>
-        
+
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Connexion</TabsTrigger>
               <TabsTrigger value="register">Inscription</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
@@ -126,7 +168,7 @@ const Login: React.FC = () => {
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
@@ -192,12 +234,12 @@ const Login: React.FC = () => {
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  {loading ? 'Inscription...' : 'S\'inscrire'}
+                  {loading ? 'Inscription...' : "S'inscrire"}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
-          
+
           <div className="mt-4 text-center">
             <Link to="/" className="text-sm text-blue-600 hover:underline">
               Retour à l'accueil

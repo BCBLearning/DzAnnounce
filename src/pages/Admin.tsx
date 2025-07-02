@@ -67,7 +67,7 @@ const Admin: React.FC = () => {
 const loadUserList = async () => {
   console.log("🔄 Chargement des utilisateurs...");
   try {
-    const { data } = await userAdminService.getUsers();
+    const { data } = await userAdminService.getAllUsers();
     console.log("✅ Utilisateurs récupérés :", data);
     setUserList(data || []);
   } catch (err) {
