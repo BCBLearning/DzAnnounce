@@ -59,7 +59,7 @@ const Login: React.FC = () => {
   setLoading(true);
 
   try {
-    console.log('📤 Envoi signup à Supabase', registerData);
+    console.log('🔵 Envoi signup à Supabase', registerData);
 
     const { data, error } = await supabase.auth.signUp({
       email: registerData.email,
@@ -67,48 +67,36 @@ const Login: React.FC = () => {
       options: {
         data: {
           full_name: registerData.fullName,
-          role: 'user'
-        }
-      }
+          role: 'user',
+        },
+      },
     });
 
-    console.log('✅ Résultat signUp:', { data, error });
+    console.log('✅ Résultat signUp:', data);
 
     if (error) {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Succès', description: 'Compte créé avec succès' });
-
-      // 🔍 Vérification immédiate du profil dans `profiles`
-      const userId = data.user?.id;
-
-      if (userId) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-
-        console.log('🔍 Vérif profil:', { profile, profileError });
-
-        if (!profile || profileError) {
-          toast({
-            title: "⚠️ Profil manquant",
-            description: "Le profil n’a pas été créé automatiquement.",
-            variant: 'destructive'
-          });
-        } else {
-          toast({
-            title: "✅ Profil créé",
-            description: `Bienvenue ${profile.full_name}`
-          });
-        }
-      }
-
-      navigate('/');
+      return;
     }
-  } catch (error) {
-    console.error('❌ Erreur JS :', error);
+
+    // ➕ Étape clé : Si pas de session, se reconnecter manuellement
+    if (!data.session) {
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: registerData.email,
+        password: registerData.password,
+      });
+
+      if (loginError) {
+        console.error('❌ Erreur connexion post-signup:', loginError.message);
+        toast({ title: 'Erreur', description: loginError.message, variant: 'destructive' });
+        return;
+      }
+    }
+
+    toast({ title: 'Succès', description: 'Compte créé avec succès' });
+    navigate('/');
+  } catch (err) {
+    console.error('❌ Exception Signup:', err);
     toast({ title: 'Erreur', description: 'Une erreur est survenue', variant: 'destructive' });
   } finally {
     setLoading(false);
